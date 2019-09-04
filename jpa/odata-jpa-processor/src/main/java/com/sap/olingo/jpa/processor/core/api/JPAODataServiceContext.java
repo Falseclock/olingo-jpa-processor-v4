@@ -265,15 +265,20 @@ public final class JPAODataServiceContext implements JPAODataCRUDContext, JPAODa
     private Optional<EntityManagerFactory> emf;
     private DataSource ds;
     private JPAEdmProvider jpaEdm;
+    private EntityManagerFactory entityManagerFactory;
 
     public JPAODataCRUDContextAccess build() throws ODataException {
       try {
         if (packageName == null)
           packageName = new String[0];
-        if (ds != null && namespace != null)
-          emf = Optional.ofNullable(JPAEntityManagerFactory.getEntityManagerFactory(namespace, ds));
-        else
-          emf = Optional.empty();
+        if (entityManagerFactory == null) {
+          if (ds != null && namespace != null)
+            emf = Optional.ofNullable(JPAEntityManagerFactory.getEntityManagerFactory(namespace, ds));
+          else
+            emf = Optional.empty();
+        } else {
+          emf = Optional.ofNullable(entityManagerFactory);
+        }
         if (emf.isPresent())
           jpaEdm = new JPAEdmProvider(namespace, emf.get().getMetamodel(), postProcessor, packageName);
         if (databaseProcessor == null) {
@@ -283,6 +288,11 @@ public final class JPAODataServiceContext implements JPAODataCRUDContext, JPAODa
         throw new ODataJPAFilterException(e, HttpStatusCode.INTERNAL_SERVER_ERROR);
       }
       return new JPAODataServiceContext(this);
+    }
+
+    public Builder setEntityManagerFactory (final EntityManagerFactory entityManagerFactory) {
+      this.entityManagerFactory = entityManagerFactory;
+      return this;
     }
 
     public Builder setDatabaseProcessor(final JPAODataDatabaseProcessor databaseProcessor) {
